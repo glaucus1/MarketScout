@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Market Scout — Inteligência de Preços</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <!-- FREE QR CODE LIBRARY -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    
     <style>
         .hidden { display: none !important; }
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
@@ -18,6 +22,7 @@
 </head>
 <body class="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-800 font-sans min-h-screen">
     
+    <!-- Header -->
     <header class="bg-gradient-to-r from-indigo-900 to-blue-800 p-4 sticky top-0 z-50 shadow-md backdrop-blur-md bg-opacity-95">
         <div class="max-w-2xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-2">
@@ -48,6 +53,7 @@
                         <tr><th class="p-3">Produto</th><th class="p-3 text-right">Preço</th><th class="p-3 text-center">Data</th></tr>
                     </thead>
                     <tbody id="resultsTable" class="divide-y divide-slate-100">
+                        <!-- Placeholder visual -->
                         <tr><td class="p-3 font-semibold">Coca-Cola 2L</td><td class="p-3 text-right text-emerald-600 font-bold">R$ 9,50</td><td class="p-3 text-center text-slate-400 text-xs">15/06/2026</td></tr>
                     </tbody>
                 </table>
@@ -56,9 +62,15 @@
 
         <!-- 2. LOGIN GATE -->
         <section id="loginGate" class="bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 hidden fade-in max-w-sm mx-auto mt-8">
-            <div class="text-center mb-6"><span class="text-4xl block">🔑</span><h2 class="text-lg font-bold">Área do Colaborador</h2></div>
+            <div class="text-center mb-6">
+                <span class="text-4xl block">🔑</span>
+                <h2 class="text-lg font-bold">Área do Colaborador</h2>
+            </div>
             <input type="password" id="accessCode" placeholder="Digite a chave (SCOUT)" class="w-full border-2 border-slate-100 focus:border-indigo-500 p-3 rounded-xl mb-4 text-center tracking-widest font-bold bg-slate-50 outline-none">
-            <button id="loginSubmit" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold py-3.5 rounded-xl shadow-md">Desbloquear</button>
+            <div class="flex gap-3">
+                <button id="cancelLogin" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold py-3.5 rounded-xl transition-colors">Voltar</button>
+                <button id="loginSubmit" class="w-2/3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold py-3.5 rounded-xl shadow-md">Desbloquear</button>
+            </div>
         </section>
 
         <!-- 3. CONTRIBUTOR WORKSPACE -->
@@ -93,18 +105,20 @@
             <div id="reviewPanel" class="hidden border-t border-slate-100 pt-6 fade-in">
                 <h3 class="font-bold text-sm uppercase text-slate-500 mb-4">📋 Revise e Salve</h3>
                 <div class="grid grid-cols-2 gap-3 mb-4">
-                    <input type="text" id="storeCnpj" placeholder="CNPJ" class="border-2 p-2 rounded-xl text-sm font-medium">
-                    <input type="date" id="receiptDate" class="border-2 p-2 rounded-xl text-sm font-medium">
+                    <input type="text" id="storeCnpj" placeholder="CNPJ" class="border-2 border-slate-100 focus:border-indigo-500 p-2.5 rounded-xl text-sm font-medium">
+                    <input type="date" id="receiptDate" class="border-2 border-slate-100 focus:border-indigo-500 p-2.5 rounded-xl text-sm font-medium">
                 </div>
-                <div class="mb-4 border rounded-xl overflow-hidden">
+                <div class="mb-4 border border-slate-100 rounded-xl overflow-hidden">
                     <table class="w-full text-left bg-slate-50">
-                        <tbody id="extractedItemsTable" class="text-xs divide-y"></tbody>
+                        <tbody id="extractedItemsTable" class="text-xs divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
-                <button class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg">Gravar na Nuvem</button>
+                <button class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 text-sm transition-all active:scale-95">Gravar na Nuvem</button>
             </div>
             
-            <button id="logoutBtn" class="mt-8 w-full text-xs text-slate-400 font-semibold">🚪 Sair do Painel</button>
+            <div class="mt-8 pt-4 border-t border-slate-100 flex justify-center">
+                <button id="logoutBtn" class="text-xs text-slate-400 hover:text-red-500 font-semibold flex items-center gap-1 transition-colors">🚪 Sair do Painel</button>
+            </div>
         </section>
 
     </main>
@@ -114,20 +128,63 @@
         import { getFirestore } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
         import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-        const GEMINI_API_KEY = "COLE_SUA_CHAVE_AQUI"; // <-- ADICIONE SUA CHAVE AQUI
+        // CHAVE DE API ATUALIZADA
+        const GEMINI_API_KEY = "AIzaSyDg8aRZbe_hIMPRuNWCV1d9xPi9geqWUrE"; 
         
-        // Navigation Logic (Simplified)
-        const views = { public: document.getElementById('publicView'), login: document.getElementById('loginGate'), contributor: document.getElementById('contributorPanel') };
-        const show = (v) => { Object.values(views).forEach(el => el.classList.add('hidden')); views[v].classList.remove('hidden'); }
-        
-        document.getElementById('navLoginBtn').onclick = () => localStorage.getItem('isAuthorized') ? show('contributor') : show('login');
-        document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('isAuthorized'); show('public'); };
-        document.getElementById('loginSubmit').onclick = () => {
-            if(document.getElementById('accessCode').value.toUpperCase() === "SCOUT") { localStorage.setItem('isAuthorized', 'true'); show('contributor'); }
+        // Configuração Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCJc-bByB8mQH2LtNY4QyLi0KBSaZecuVU",
+            authDomain: "market-scout-353c2.firebaseapp.com",
+            projectId: "market-scout-353c2",
+            storageBucket: "market-scout-353c2.firebasestorage.app",
+            messagingSenderId: "134391595418",
+            appId: "1:134391595418:web:5d7040966475f26ed5fa23"
         };
 
-        // --- THE BRAIN: Parsing function to render UI ---
-        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- NAVEGAÇÃO E AUTENTICAÇÃO ---
+        const views = { 
+            public: document.getElementById('publicView'), 
+            login: document.getElementById('loginGate'), 
+            contributor: document.getElementById('contributorPanel') 
+        };
+
+        const show = (v) => { 
+            Object.values(views).forEach(el => el.classList.add('hidden')); 
+            views[v].classList.remove('hidden'); 
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        
+        document.getElementById('navLoginBtn').addEventListener('click', () => {
+            localStorage.getItem('isAuthorized') === 'true' ? show('contributor') : show('login');
+        });
+        
+        document.getElementById('cancelLogin').addEventListener('click', () => show('public'));
+
+        document.getElementById('logoutBtn').addEventListener('click', () => { 
+            localStorage.removeItem('isAuthorized'); 
+            show('public'); 
+        });
+        
+        document.getElementById('loginSubmit').addEventListener('click', () => {
+            if(document.getElementById('accessCode').value.toUpperCase() === "SCOUT") { 
+                localStorage.setItem('isAuthorized', 'true'); 
+                show('contributor'); 
+                document.getElementById('accessCode').value = '';
+            } else {
+                alert("Senha incorreta. Digite SCOUT para testar.");
+            }
+        });
+
+        // --- INTELIGÊNCIA ARTIFICIAL (GEMINI) ---
+        let genAI;
+        try {
+            genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        } catch (e) {
+            console.error("Erro ao inicializar Gemini API:", e);
+        }
 
         function renderExtractedData(jsonData) {
             document.getElementById('loadingStatus').classList.add('hidden');
@@ -138,37 +195,37 @@
             const tbody = document.getElementById('extractedItemsTable');
             tbody.innerHTML = jsonData.items.map(i => `
                 <tr>
-                    <td class="p-2"><input class="w-full bg-transparent font-bold outline-none" value="${i.name}"></td>
-                    <td class="p-2 w-12"><input type="number" class="w-full bg-transparent outline-none" value="${i.qtd}"></td>
-                    <td class="p-2 w-20 text-emerald-600 font-bold"><input type="number" step="0.01" class="w-full bg-transparent outline-none" value="${i.unitPrice}"></td>
+                    <td class="p-2 border-b border-slate-100"><input class="w-full bg-transparent font-bold text-slate-800 outline-none" value="${i.name}"></td>
+                    <td class="p-2 border-b border-slate-100 w-12"><input type="number" step="0.01" class="w-full bg-transparent text-slate-600 outline-none" value="${i.qtd}"></td>
+                    <td class="p-2 border-b border-slate-100 w-24 text-emerald-600 font-bold"><input type="number" step="0.01" class="w-full bg-transparent outline-none" value="${i.unitPrice}"></td>
                 </tr>
             `).join('');
         }
 
-        // --- METHOD 1: QR CODE + HTML SCRAPING + GEMINI ---
+        // --- MÉTODO 1: QR CODE (SEFAZ + GEMINI) ---
         let html5QrcodeScanner = null;
 
-        document.getElementById('btnStartQR').onclick = () => {
+        document.getElementById('btnStartQR').addEventListener('click', () => {
             document.getElementById('qrReaderContainer').classList.remove('hidden');
-            html5QrcodeScanner = new Html5Qrcode("reader");
+            // Usando window.Html5Qrcode para garantir acesso ao escopo global do script importado
+            html5QrcodeScanner = new window.Html5Qrcode("reader");
             html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, async (decodedText) => {
-                // When QR is found:
                 html5QrcodeScanner.stop();
                 document.getElementById('qrReaderContainer').classList.add('hidden');
                 document.getElementById('loadingStatus').classList.remove('hidden');
                 document.getElementById('loadingStatus').innerText = "🔗 QR lido! Buscando dados na SEFAZ...";
 
                 try {
-                    // Fetch SEFAZ HTML using a free CORS proxy
                     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(decodedText)}`;
                     const response = await fetch(proxyUrl);
                     const data = await response.json();
                     
                     document.getElementById('loadingStatus').innerText = "🧠 Estruturando dados com Gemini AI...";
                     
-                    // Ask Gemini to convert raw SEFAZ HTML to our JSON
+                    if(!genAI) throw new Error("Chave do Gemini inválida ou não configurada.");
                     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                    const prompt = `Você é um extrator de cupons. Eis o HTML da SEFAZ: ${data.contents.substring(0, 15000)}. Extraia em JSON sem markdown: {"cnpj":"...", "date":"YYYY-MM-DD", "items":[{"name":"...", "qtd":1.0, "unitPrice":0.00}]}`;
+                    
+                    const prompt = `Você é um extrator de cupons fiscais brasileiros. Eis o HTML da SEFAZ: ${data.contents.substring(0, 15000)}. Extraia os dados estritamente no formato JSON abaixo, sem formatação markdown: {"cnpj":"XX.XXX.XXX/XXXX-XX", "date":"YYYY-MM-DD", "items":[{"name":"NOME", "qtd":1.0, "unitPrice":0.00}]}`;
                     
                     const result = await model.generateContent(prompt);
                     const jsonText = result.response.text().replace(/```json/g, '').replace(/
@@ -176,38 +233,43 @@
                     renderExtractedData(JSON.parse(jsonText));
 
                 } catch(e) {
-                    alert("Erro na leitura QR/SEFAZ. Tente enviar uma foto. " + e.message);
+                    alert("Erro na leitura SEFAZ: " + e.message);
                     document.getElementById('loadingStatus').classList.add('hidden');
                 }
             }).catch(err => console.log(err));
-        };
+        });
 
-        document.getElementById('btnCancelQR').onclick = () => {
+        document.getElementById('btnCancelQR').addEventListener('click', () => {
             if(html5QrcodeScanner) html5QrcodeScanner.stop();
             document.getElementById('qrReaderContainer').classList.add('hidden');
-        };
+        });
 
-        // --- METHOD 2: TRADITIONAL PHOTO UPLOAD (Backup) ---
-        document.getElementById('receiptImage').onchange = async (e) => {
+        // --- MÉTODO 2: UPLOAD DE IMAGEM (GEMINI VISION) ---
+        document.getElementById('receiptImage').addEventListener('change', async (e) => {
             if(!e.target.files[0]) return;
             document.getElementById('loadingStatus').classList.remove('hidden');
-            document.getElementById('loadingStatus').innerText = "📸 Lendo imagem do cupom...";
+            document.getElementById('loadingStatus').innerText = "📸 Analisando imagem do cupom...";
             
             try {
+                if(!genAI) throw new Error("Chave do Gemini inválida ou não configurada.");
                 const file = e.target.files[0];
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onloadend = async () => {
                     const imagePart = { inlineData: { data: reader.result.split(",")[1], mimeType: file.type } };
                     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                    const prompt = `Analise a imagem fiscal e extraia em JSON sem markdown: {"cnpj":"XX.XXX.XXX/XXXX-XX", "date":"YYYY-MM-DD", "items":[{"name":"...", "qtd":1.0, "unitPrice":0.00}]}`;
+                    
+                    const prompt = `Você é um extrator de cupons fiscais. Analise a imagem e extraia os dados estritamente no formato JSON abaixo, sem formatação markdown: {"cnpj":"XX.XXX.XXX/XXXX-XX", "date":"YYYY-MM-DD", "items":[{"name":"NOME DO PRODUTO", "qtd":1.0, "unitPrice":0.00}]}`;
                     
                     const result = await model.generateContent([prompt, imagePart]);
                     const jsonText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
                     renderExtractedData(JSON.parse(jsonText));
                 };
-            } catch(e) { alert("Erro ao analisar imagem."); }
-        };
+            } catch(e) { 
+                alert("Erro ao ler imagem: " + e.message); 
+                document.getElementById('loadingStatus').classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>
